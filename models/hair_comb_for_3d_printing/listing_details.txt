@@ -14,6 +14,6 @@ Product Title: Hair Comb For 3D Printing - 3D Printed Premium Quality
 - Durable, eco-friendly material setup.
 
 [Augmented Reality (AR) Preview Link]
-https://example.com/ar?model=hair_comb_for_3d_printing
+https://yudokesa.github.io/ar-store/?model=hair_comb_for_3d_printing
 
 ==================================================
