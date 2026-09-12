@@ -59,7 +59,7 @@
   ios-src=""
   ar 
   ar-modes="quick-look scene-viewer webxr" 
-  ar-scale="auto"
+  ar-scale="fixed"
   camera-controls 
   touch-action="pan-y" 
   alt="3D AR Product Model"
@@ -78,12 +78,10 @@
   const fallbackMsg = document.getElementById('fallback-msg');
 
   if (modelName) {
-    // Set 3D model sources dynamically
     viewer.src = `./models/${modelName}/${modelName}_scaled.glb`;
     viewer.setAttribute('ios-src', `./models/${modelName}/${modelName}.usdz`);
   }
 
-  // Detect if device supports spatial camera AR
   viewer.addEventListener('ar-status', (event) => {
     if (event.detail.status === 'failed') {
       fallbackMsg.style.display = 'block';
