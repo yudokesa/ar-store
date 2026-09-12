@@ -43,9 +43,8 @@
 <model-viewer 
   id="ar-viewer"
   src="" 
-  ios-src=""
   ar 
-  ar-modes="webxr scene-viewer quick-look" 
+  ar-modes="scene-viewer webxr quick-look" 
   camera-controls 
   touch-action="pan-y" 
   alt="3D AR Product Model"
@@ -64,7 +63,6 @@
 
   if (modelName) {
     viewer.src = `./models/${modelName}/${modelName}_scaled.glb`;
-    viewer.setAttribute('ios-src', `./models/${modelName}/${modelName}.usdz`);
   }
 </script>
 
