@@ -1,0 +1,19 @@
+==================================================
+PRODUCT LISTING DETAILS
+==================================================
+Product Title: Hair Comb For 3D Printing - 3D Printed Premium Quality
+
+[Dimensions]
+- Width: 2.6 cm
+- Depth: 12.0 cm
+- Height: 0.2 cm
+
+[Product Highlights]
+- High-precision 3D printed daily essential item.
+- Interactive 1:1 Scale AR Preview available via QR Code in product photos.
+- Durable, eco-friendly material setup.
+
+[Augmented Reality (AR) Preview Link]
+https://example.com/ar?model=hair_comb_for_3d_printing
+
+==================================================
