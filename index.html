@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>AR Product Viewer</title>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: #f8f9fa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    model-viewer {
+      width: 100%;
+      height: 100%;
+      --poster-color: transparent;
+    }
+    #ar-button {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #007bff;
+      color: #ffffff;
+      border: none;
+      border-radius: 24px;
+      padding: 14px 28px;
+      font-weight: 600;
+      font-size: 15px;
+      white-space: nowrap;
+      box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.25);
+      cursor: pointer;
+      z-index: 9999;
+      transition: background-color 0.2s ease, transform 0.2s ease;
+    }
+    #ar-button:active {
+      transform: translateX(-50%) scale(0.96);
+      background-color: #0056b3;
+    }
+    #status-msg {
+      display: none;
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.82);
+      color: #ffffff;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      z-index: 9999;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+</head>
+<body>
+
+<div id="status-msg"></div>
+
+<model-viewer 
+  id="ar-viewer"
+  src="" 
+  ios-src=""
+  ar 
+  ar-modes="quick-look scene-viewer webxr" 
+  ar-scale="fixed"
+  camera-controls 
+  touch-action="pan-y" 
+  alt="3D AR Product Model"
+  shadow-intensity="1"
+  auto-rotate>
+  
+  <button slot="ar-button" id="ar-button">
+    👋 View in Your Space (AR)
+  </button>
+</model-viewer>
+
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const modelName = urlParams.get('model');
+  const folder = urlParams.get('folder') || 'assets';
+  
+  const viewer = document.getElementById('ar-viewer');
+  const statusMsg = document.getElementById('status-msg');
+
+  if (modelName) {
+    const cacheBuster = `?v=${Date.now()}`;
+    const basePath = `./${folder}/${modelName}`;
+    
+    viewer.src = `${basePath}/${modelName}_scaled.glb${cacheBuster}`;
+    viewer.setAttribute('ios-src', `${basePath}/${modelName}.usdz${cacheBuster}`);
+  } else {
+    statusMsg.textContent = 'No 3D model specified in URL (e.g., ?model=hair_comb_for_3d_printing)';
+    statusMsg.style.display = 'block';
+  }
+
+  viewer.addEventListener('ar-status', (event) => {
+    if (event.detail.status === 'failed') {
+      statusMsg.textContent = '3D Preview Mode (Spatial AR unavailable on this browser/device)';
+      statusMsg.style.display = 'block';
+    }
+  });
+
+  viewer.addEventListener('error', (event) => {
+    statusMsg.textContent = 'Failed to load 3D model file. Check directory path or file name.';
+    statusMsg.style.display = 'block';
+  });
+</script>
+
+</body>
+</html>

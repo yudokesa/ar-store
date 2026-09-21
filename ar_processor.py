@@ -5,7 +5,7 @@ import qrcode
 import numpy as np
 
 INPUT_DIR = "staging_input"
-OUTPUT_DIR = "output_products"
+OUTPUT_DIR = "assets"
 
 def generate_listing_text(product_name, dims_mm):
     """Generates ready-to-copy e-commerce listing details."""
