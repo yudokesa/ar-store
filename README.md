@@ -1,67 +1,57 @@
-# AR 3D Store Pipeline
+# 3D Agentic Store — Shopify + Slant 3D Fulfillment Pipeline
 
-An automated pipeline that converts 3D model files into AR-ready product bundles with a web-based viewer, preview images, QR codes, and e-commerce listing details.
+Automated 3D-printing fulfillment. Products are published to Shopify with the
+physical attributes Slant 3D requires, orders are handed off through Make.com,
+and each order cites the source `.stl` via a `custom.stl_url` metafield.
 
-## Project Structure
+## Structure
 
 ```
 3d-agentic-store/
-├── index.html              # Root AR product viewer (Google model-viewer)
-├── ar_processor.py         # Main processing script
-├── assets/                 # Output: processed AR product bundles
-│   └── <product_name>/
-│       ├── <product_name>_scaled.glb    # AR-ready GLB (Android / WebXR)
-│       ├── <product_name>.usdz          # AR-ready USDZ (iOS Quick Look)
-│       ├── ar_qr_code.png               # QR code linking to the AR viewer
-│       ├── listing_details.txt          # E-commerce listing copy
-│       └── images/
-│           └── preview_isometric.png    # Rendered product preview
-├── staging_input/          # Input: drop raw 3D files here (.glb, .stl, .obj, .3mf)
-└── models/                 # Archived / backup product bundles
+├── assets/                     # Active .stl models (one folder per product)
+│   ├── angel-christmas_tree_decor/angel-christmas_tree_decor.stl
+│   ├── bearish/bearish.stl
+│   └── bullish/bullish.stl
+├── legacy/                     # Archived AR pipeline (not part of this pipeline)
+├── shopify_client.py           # Reusable Admin API client (auth + GraphQL)
+├── publish_catalog.py          # Publishes the 3 assets/ products to Shopify
+├── create_sample_3d_product.py # Minimal single-product template
+├── test_shopify_connection.py  # Connection smoke test
+└── requirements.txt
 ```
 
-## Pipeline Overview
+## Setup
 
-1. **Input** — Place raw 3D model files (`.glb`, `.stl`, `.obj`, `.3mf`) into `staging_input/<product_folder>/`.
-2. **Process** — Run `ar_processor.py`. It automatically:
-   - Loads each 3D mesh and normalizes units to meters (1:1 real-world scale for AR).
-   - Exports an AR-scaled `.glb` for Android / WebXR.
-   - Exports an AR-scaled `.usdz` for iOS Quick Look.
-   - Generates a QR code image that links to the AR viewer URL.
-   - Renders an isometric preview PNG.
-   - Writes a `listing_details.txt` with title, dimensions, AR link, and marketing copy.
-3. **Output** — Everything saves into `assets/<product_name>/`.
-4. **View** — Open `index.html?model=<product_name>` in a browser. Supported devices will launch AR directly via the on-screen button.
+```bash
+pip install -r requirements.txt
+```
+
+Create a `.env` file in the repo root (never committed):
+
+```
+SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
+SHOPIFY_CLIENT_ID=...
+SHOPIFY_CLIENT_SECRET=...
+```
 
 ## Usage
 
-### Setup
+Smoke-test the connection:
 
 ```bash
-pip install trimesh qrcode numpy usd-core pillow
+python test_shopify_connection.py
 ```
 
-### Process Models
+Publish the catalog (dry run by default; add `--execute` to apply):
 
 ```bash
-python ar_processor.py
+python publish_catalog.py
+python publish_catalog.py --execute
 ```
 
-Place your raw 3D files under `staging_input/` (subfolders are fine — the script scans recursively).
+## Fulfillment requirements
 
-### View a Product in AR
-
-Serve the project root with any static web server, then navigate to:
-
-```
-http://localhost:8000/index.html?model=hair_comb_for_3d_printing
-```
-
-- On iOS Safari: Tap **View in Your Space (AR)** → launches Quick Look.
-- On Android Chrome: Launches Scene Viewer or WebXR.
-- On desktop: Shows an interactive 3D preview.
-
-## Key Files
-
-- [index.html](index.html) — AR viewer page powered by `<model-viewer>`; reads `?model=` and `?folder=` URL params (defaults to `assets/`).
-- [ar_processor.py](ar_processor.py) — Batch processor (`INPUT_DIR=staging_input`, `OUTPUT_DIR=assets`).
+Every 3D-printed product must have `requiresShipping` enabled, a non-zero weight
+(0.1 kg), inventory tracking on, and a `custom.stl_url` metafield pointing at a
+publicly reachable HTTPS link to the model file — otherwise orders will not
+trigger automated fulfillment.
