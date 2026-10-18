@@ -137,8 +137,8 @@ def configure_variant(client, product, spec):
             {
                 "id": variant["id"],
                 "price": spec["price"],
-                "sku": spec["sku"],
                 "inventoryItem": {
+                    "sku": spec["sku"],
                     "tracked": True,
                     "requiresShipping": True,
                     "measurement": {
