@@ -23,10 +23,10 @@ read from the store. No assumptions.
 | Weight unit / system | GRAMS / METRIC_SYSTEM |
 | `taxesIncluded` | **true** ← *still open* |
 | `taxShipping` | false |
-| `shipsToCountries` | `["ID", "US"]` |
-| Markets | **Indonesia** (`ACTIVE`, `currencySettings: null`) · **United States** (`ACTIVE`, base `USD`, `localCurrencies: false`) |
+| `shipsToCountries` | **`["US"]`** — US-only (was `["ID","US"]`) |
+| Markets | **United States only** (`ACTIVE`, base `USD`). Indonesia market **deleted** |
 | Locations | 1 — `Shop location` (`gid://shopify/Location/94780489956`), active, fulfillsOnlineOrders |
-| Delivery profile | 1 default ("General profile"), 3 variants, 29 countries, 2 zones |
+| Delivery profile | 1 default ("General profile"), 3 variants, **1 zone / 1 country — "United States", flat `$4.99 USD`** |
 | Publications | Online Store + Point of Sale, **both `autoPublish: true`** |
 | Products | 3 — all **ACTIVE**, published, 50 units each |
 | Collections | 1 (`frontpage` default only) |
@@ -39,6 +39,7 @@ read from the store. No assumptions.
 | Granted app scopes | **183** (70 of them `write_*`) ← *see N1* |
 | Legal policies | 5 present with real content |
 | Locales | `en` — primary, published |
+| Storefront | **password-protected** — redirects to `/en-us/password` ("opening soon") |
 
 ---
 
@@ -46,13 +47,15 @@ read from the store. No assumptions.
 
 | Ref | Was | Now (verified live) |
 |---|---|---|
-| **C6** | Shipping unreadable | **Resolved.** Readable. 1 default profile, 2 zones: "Domestic" (ID) and "International" (28 countries incl. **US**), each with 1 active flat rate. Checkout will not fail for lack of a rate. |
+| **C6** | Shipping unreadable | **Resolved.** Readable. 1 default profile, **1 zone — "United States"**, 1 active flat rate **`$4.99 USD`**. Checkout will not fail for lack of a rate. |
 | **C7** | 0 metafield definitions | **Resolved.** `custom.stl_url` created — `type: url`, `ownerType: PRODUCT`, `pinnedPosition: 1`, `validationStatus: ALL_VALID`. All 3 products now resolve `definition = STL File URL` (previously `null`). |
 | **C8** | `autoPublish: false` | **Resolved.** Both channels now `autoPublish: true`. New products reach channels without the separate activation pass. |
 | **C25** | Policies unverifiable | **Resolved.** All 5 exist with real bodies: Contact, Privacy policy, Refund policy, Shipping, Terms of service. |
 | **C26** | Markets unverifiable | **Resolved.** United States market is `ACTIVE` with base currency **USD** — matches the Slant 3D requirement. |
 | **C2** | `#1001` PAID + UNFULFILLED | **Resolved.** Cancelled — `cancelledAt` set, fulfillment order `CLOSED`, status `FULFILLMENT_NOT_REQUIRED`. Out of the fulfillment queue. |
 | **C27** | 15 scopes, reads denied | **Changed** — expanded to 183 scopes. All previously denied reads now work, but see **N1**. |
+| **N2** | Rates in IDR; 28-country zone incl. US; ID sellable | **Resolved.** Storefront restricted to the US: single "United States" zone at **`$4.99 USD`**, ID zone deleted, ID market deleted, `shipsToCountries` = `['US']`. |
+| **N3** | — | **Withdrawn, see §3.** The "no webhooks = broken" framing was wrong once polling was confirmed. |
 | **C22** (partly) | Assumed weight drives shipping rates | **Corrected — my earlier reasoning was wrong.** Rates are flat `DeliveryRateDefinition` prices, not weight-based. Weight does **not** currently drive shipping cost. See N2. |
 
 ---
@@ -103,18 +106,35 @@ script injection and card-skimming. Recommend reducing to the minimal set the pi
 (~10–15 scopes: products, inventory, orders, fulfillments, locations, publications) and treating the
 current credential as compromised-by-policy until rotated.
 
-### N2 — Shipping rates are denominated in IDR while the catalog is USD
-Verified rates:
+### N2 — Shipping rates were denominated in IDR while the catalog is USD — **RESOLVED**
+**Was:** two flat IDR zones —
 
 | Zone | Countries | Method | Rate |
 |---|---|---|---|
 | Domestic | ID | "Standar" | **48,229 IDR** |
 | International | 28 (incl. **US**) | "International" | **340,000 IDR** |
 
-Two problems: (a) the catalog is priced in **USD** but shipping is set in **IDR** — an inconsistency a
-US buyer will see as a converted, unpredictable rate; (b) a flat **340,000 IDR** international charge
-against products priced **$9.99–$19.99** means shipping plausibly costs more than the item. Because the
+Two problems: (a) the catalog is priced in **USD** but shipping was set in **IDR** — an inconsistency a
+US buyer sees as a converted, unpredictable rate; (b) a flat **340,000 IDR** international charge
+against products priced **$9.99–$19.99** meant shipping plausibly cost more than the item. Because the
 rates are *flat*, the per-product `0.1 kg` weight has no effect on the calculated cost.
+
+**Fix applied (verified live).** Per the merchant's directive to sell strictly within the US:
+
+| Zone | Countries | Method | Rate |
+|---|---|---|---|
+| United States | US | "Standard US Shipping" | **$4.99 USD** |
+
+* The "Domestic" (ID) zone was **deleted**; the international 28-country zone was replaced with a
+  single-country **US** zone at a flat **`$4.99 USD`** (matching the USD catalog).
+* The **Indonesia market was deleted**, so the only market is **United States** (`ACTIVE`, base USD).
+* `shipsToCountries` and `countriesInShippingZones` now both return **`['US']`**.
+* **Finding:** `shipsToCountries` / `countriesInShippingZones` are **market-derived, not zone-derived** —
+  deleting the ID *zone* alone did not change `shipsToCountries`; deleting the ID *market* cleared it
+  to `['US']` instantly. Any future "which countries can buy?" question must be answered at the market
+  layer, not the shipping-profile layer.
+* Still flat — weight does not drive cost (see C22). A real carrier/weight-based model remains a
+  Phase 3 consideration if shipping cost needs to track model size.
 
 ### N3 — 12-hour polling means up to 12 hours of fulfilment latency
 `webhookSubscriptions` is empty and — consistent with a polling design — `read_webhooks`/`write_webhooks`
@@ -126,9 +146,10 @@ reference, confirming they are not valid current scopes). So:
   model. But confirm 12h latency is an accepted customer-facing lead time, since the storefront makes
   no lead-time promise today.
 
-### N4 — Indonesia market has `currencySettings: null`
-The ID market returns no currency configuration, so Indonesian buyers likely present in the shop's base
-currency (**USD**). Given the merchant's billing address is in Indonesia, confirm this is intended.
+### N4 — Indonesia market had `currencySettings: null` — **MOOT (market deleted)**
+The ID market returned no currency configuration, so Indonesian buyers likely presented in the shop's
+base currency (**USD**). The Indonesia market has since been **deleted** as part of the US-only
+restriction (N2), so this no longer applies.
 
 ### N5 — US market web presence has no domain
 `MarketWebPresence` exists for the United States but `domain: null`. With only the `myshopify.com`
@@ -171,7 +192,7 @@ wanted, they require a different mechanism than these scopes.
 |---|---|
 | **C18** | Store name `My Store`; no custom domain. |
 | **C19** | `Asia/Jakarta` timezone vs US-based fulfilment — order timestamps and cut-offs misleading for US buyers. |
-| **C20** | `shipsToCountries` includes `ID`; confirm Slant 3D actually fulfills to Indonesia, else risk refunds. |
+| **C20** | ~~`shipsToCountries` includes `ID`~~ **Resolved (N2)** — `shipsToCountries` is now `['US']`; the ID market/zone were removed, so only US destinations are selectable. |
 | **C21** | Shop weight unit GRAMS vs variants written in KILOGRAMS (both = 100 g, but inconsistent in the admin UI). |
 | **C22** | All three products share `0.1 kg` despite models of 74.5 / 54.2 / 68.3 MB. *(No longer a shipping-rate bug — rates are flat, see N2 — but still wrong for labels, future carrier rates, and Slant 3D.)* |
 | **C23** | STLs served from `raw.githubusercontent.com` — re-verified **HTTP 200**: 74.5 MB / 54.2 MB / 68.3 MB. Not a CDN, no SLA, soft rate limits; repo carries ~190 MB of STL history. Migrate to object storage/CDN + Git LFS. |
@@ -204,7 +225,7 @@ require inspection inside Make.com.
 1. **Add product images** (C3) — `productCreateMedia`. Blocks Meta/eBay; highest impact.
 2. **`taxesIncluded` → false** (C4) — admin UI only, no API path.
 3. **Reduce app scopes from 183 to the minimal set** (N1) and rotate the credential.
-4. **Re-price shipping** (N2) — replace flat IDR rates with USD-denominated rates sized to the catalog.
+4. ~~**Re-price shipping** (N2)~~ — **DONE.** Flat IDR zones replaced by a single US zone at `$4.99 USD`; ID zone and ID market removed.
 5. **Confirm 12h latency is acceptable** (N3); otherwise revisit the trigger model and lead-time copy.
 
 ### Phase 2 — Multi-channel readiness
@@ -213,7 +234,7 @@ require inspection inside Make.com.
 12. Install eBay / Meta / Google channels + create feeds (C9, C10) — admin action.
 
 ### Phase 3 — Hygiene
-13. Brand name + custom domain (C18, N6) · 14. timezone + `shipsToCountries` (C19, C20)
+13. Brand name + custom domain (C18, N6) · 14. timezone alignment with US fulfilment (C19)
 15. weight unit normalisation + real per-product weights (C21, C22, N7)
 16. STL migration to CDN + Git LFS (C23) · 17. confirm inventory model (C24) · 18. US market domain (N5)
 
@@ -222,11 +243,11 @@ require inspection inside Make.com.
 ## 8. Severity Summary
 
 **Open and operationally significant:** C3 (no images), N1 (183-scope over-grant),
-N2 (shipping currency/price mismatch), C4 (tax inclusion).
+C4 (tax inclusion).
 
 **Blocking growth:** C9–C17.
 
-**Config debt / trust:** C18–C24, N4–N7.
+**Config debt / trust:** C18–C24, N5–N7 (N4 moot).
 
 **Verified good:** products ACTIVE, published, `requiresShipping: true`, 0.1 kg weights, SKUs and prices
 set, 50 units at a real active location, correct `custom.stl_url` on all three resolving to HTTP 200,
