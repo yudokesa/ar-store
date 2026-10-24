@@ -21,7 +21,7 @@ GITHUB_BRANCH = "main"
 
 PRODUCT_TYPE = "3D Printed Model"
 VENDOR = "Slant 3D"
-STATUS = "DRAFT"           # set to "ACTIVE" to publish to sales channels
+STATUS = "DRAFT"           # applied on CREATE only; updates never change status
 WEIGHT_KG = 0.1            # non-zero weight so shipping zones evaluate
 WEIGHT_UNIT = "KILOGRAMS"
 
@@ -168,23 +168,30 @@ def find_by_handle(client, handle):
     return nodes[0] if nodes else None
 
 
-def describe(spec):
-    return {
+def describe(spec, include_status=False):
+    """Build the product payload.
+
+    `status` is only ever sent on CREATE. Re-sending STATUS ("DRAFT") on an update
+    would silently unpublish a product that is already live and ACTIVE.
+    """
+    product = {
         "title": spec["title"],
         "handle": spec["handle"],
         "productType": PRODUCT_TYPE,
         "vendor": VENDOR,
         "tags": spec["tags"],
-        "status": STATUS,
         "descriptionHtml": (
             f"<p>{spec['title']} — 3D printed to order and fulfilled via Slant 3D. "
             f"Source model attached as the custom.stl_url metafield.</p>"
         ),
     }
+    if include_status:
+        product["status"] = STATUS
+    return product
 
 
 def create_product(client, spec):
-    data = client.execute(CREATE_PRODUCT, {"product": describe(spec)})
+    data = client.execute(CREATE_PRODUCT, {"product": describe(spec, include_status=True)})
     payload = check_user_errors(data["productCreate"], "productCreate")
     return payload["product"]
 
