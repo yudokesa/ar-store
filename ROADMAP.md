@@ -160,40 +160,49 @@ done in the Shopify admin.
 
 ---
 
-## 3. Immediate Next Action — Recommended
+## 3. Immediate Next Action — Executed (Phase 2.1–2.4)
 
-**Execute [enrich_catalog.py](file:///c:/Users/User/3d-agentic-store/enrich_catalog.py) (Phase 2.1–2.4).**
+**`enrich_catalog.py --execute` has been run and independently verified.** All three products now
+carry a taxonomy category, SEO metadata, COGS and customs data.
 
-Why this and not something else "right now":
+Verified by a separate read-back query (not the writing script's own output):
 
-* **Phase 1 is admin-gated, not script-gated.** Scope reduction is blocked until you enumerate
-  Make.com's modules (1.3); `taxesIncluded` and the storefront password have no API path at all.
-  Neither can be executed from here today.
-* **It is the largest fully-verifiable step available.** Taxonomy resolution, SEO writes and
-  inventory-item updates are all confirmed against live schema, and the script is idempotent and
-  dry-run by default — zero risk.
-* **It unblocks the entire omnichannel network.** Google and Meta reject listings with no category;
-  no channel can report margin without COGS. Nothing in Domain B can start until 2.1–2.4 land.
-* **It becomes the reusable engine.** The same script is what makes a new STL "sellable" — which is
-  precisely the scaling capability the vision describes.
+| Product | Category (fullName) | SEO title | COGS | Customs |
+|---|---|---|---|---|
+| angel-christmas-tree-decor | Home & Garden > Decor > Seasonal & Holiday Decorations > Holiday Ornaments | Angel Christmas Tree Decoration \| 3D Printed | `4.25 USD` | `US` / `392640` |
+| bullish | Home & Garden > Decor > Figurines | Bullish 3D Printed Figurine \| Stock Market Decor | `4.25 USD` | `US` / `392640` |
+| bearish | Home & Garden > Decor > Figurines | Bearish 3D Printed Figurine \| Stock Market Decor | `4.25 USD` | `US` / `392640` |
 
-**Already verified running clean** (dry run, no changes):
+All three remain **ACTIVE**, `tracked: true`, `requiresShipping: true`, with their original SKUs and
+prices intact — the enrichment touched nothing else.
 
-```
-Angel Christmas Tree Decoration  -> Holiday Ornaments (gid://shopify/TaxonomyCategory/hg-3-58-7)
-Bullish 3D Printed Model         -> Figurines       (gid://shopify/TaxonomyCategory/hg-3-30)
-Bearish 3D Printed Model         -> Figurines       (gid://shopify/TaxonomyCategory/hg-3-30)
-```
+> **Note on HS code format:** Shopify normalised the value `3926.40` to **`392640`** (punctuation
+> stripped) on write. That is expected storage behaviour, not a data error — verify against
+> `harmonizedSystemCode` when filing, and expect the same normalisation for any HS code you supply.
 
-**Two inputs are needed before `--execute`**, because the script refuses to invent financial or
-tariff data:
+### What this unblocks
 
-1. `unit_cost` per product — from your Slant 3D price list.
-2. `hs_code` — a customs determination (3D-printed plastic decorative articles commonly fall under
-   **3926.40**; confirm with a broker before filing).
-3. Confirm `countryCodeOfOrigin` is `US` (assumes Slant 3D prints domestically).
+* **Google Merchant Center and Meta/IG Shop** can now accept listings — both reject uncategorized products.
+* **Margin reporting** is possible: `unitCost` × price gives gross margin per order.
+* **Customs/COGS fields are populated**, so the customs data path is proven end-to-end and future
+  products inherit it.
+* **`enrich_catalog.py` is now the reusable "make a new STL sellable" step** — the scaling primitive.
 
-Everything else — category and SEO — can be applied immediately without those inputs.
+### What is still the true next action
+
+**Phase 2.1–2.4 were the largest *scriptable* step. They were not the highest-impact one.**
+
+The binding constraint remains **A1 — no fulfilled order has ever completed the loop.** Everything
+configured so far is unproven against real traffic, and the pipeline's failure modes (duplicate prints,
+silent dropouts, unmapped addresses) are all invisible until an order runs through it.
+
+Recommended order from here:
+
+1. **1.3 — enumerate Make.com's modules** (admin, and it is the gate on scope reduction).
+2. **1.7 — the `test: true` fulfillment rehearsal** (A1, A7). This is the single highest-value action
+   available: it validates the whole engine without charging anyone or printing anything.
+3. **2.5 — product images** (B6) once your renders are ready; still the hardest blocker on syndication.
+
 
 ---
 

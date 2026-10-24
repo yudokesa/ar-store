@@ -29,6 +29,7 @@ read from the store. No assumptions.
 | Delivery profile | 1 default ("General profile"), 3 variants, **1 zone / 1 country — "United States", flat `$4.99 USD`** |
 | Publications | Online Store + Point of Sale, **both `autoPublish: true`** |
 | Products | 3 — all **ACTIVE**, published, 50 units each |
+| Catalog enrichment | all 3 categorized + SEO + `unitCost` `4.25 USD` + customs `US` / `392640` |
 | Collections | 1 (`frontpage` default only) |
 | Orders | 1 (`#1001`) — **cancelled** |
 | Customers | 1 |
@@ -170,19 +171,19 @@ wanted, they require a different mechanism than these scopes.
 
 ---
 
-## 4. MULTI-CHANNEL & EXPANSION GAPS (all still open)
+## 4. MULTI-CHANNEL & EXPANSION GAPS
 
 | Ref | Gap |
 |---|---|
 | **C9** | Only 2 channels — Online Store, Point of Sale. No eBay, Meta/Facebook & Instagram, TikTok, Google, Amazon or Walmart. |
 | **C10** | `productFeeds: []` — no Meta or Google Merchant feed exists. |
-| **C11** | `category: null` on all products — no Shopify Standard Product Taxonomy, which drives Google/Meta/eBay category mapping. |
-| **C12** | `seo.title` / `seo.description` both `null` on all products. |
+| **C11** | ~~`category: null` on all products~~ **Resolved.** All 3 products categorized (`Holiday Ornaments`, `Figurines`) via `enrich_catalog.py`. |
+| **C12** | ~~`seo.title` / `seo.description` both `null`~~ **Resolved.** Title + description set on all 3 products. |
 | **C13** | `barcode: null` on all variants — no GTIN/UPC/EAN or brand+MPN exemption. |
 | **C14** | Only the default `frontpage` collection — no curated collections to drive navigation or syndication. |
 | **C15** | Single default variant only (`Title` / `Default Title`) — no size/material options. |
-| **C16** | `countryCodeOfOrigin: null`, `harmonizedSystemCode: null` on every item — no customs data. |
-| **C17** | `unitCost: null`, `compareAtPrice: null` — no COGS ⇒ no margin reporting. |
+| **C16** | ~~`countryCodeOfOrigin: null`, `harmonizedSystemCode: null`~~ **Resolved.** All 3 items now `US` / `392640`. |
+| **C17** | ~~`unitCost: null`~~ **Partly resolved.** `unitCost = 4.25 USD` on all 3; `compareAtPrice` still `null` — no price anchoring for marketplace CTR. |
 
 ---
 
@@ -245,11 +246,12 @@ require inspection inside Make.com.
 **Open and operationally significant:** C3 (no images), N1 (183-scope over-grant),
 C4 (tax inclusion).
 
-**Blocking growth:** C9–C17.
+**Blocking growth:** C9, C10, C13–C15, and C17 (partly — `compareAtPrice` only).
 
 **Config debt / trust:** C18–C24, N5–N7 (N4 moot).
 
 **Verified good:** products ACTIVE, published, `requiresShipping: true`, 0.1 kg weights, SKUs and prices
 set, 50 units at a real active location, correct `custom.stl_url` on all three resolving to HTTP 200,
 pinned metafield definition, `autoPublish` on both channels, complete legal policies, USD base currency
-with an ACTIVE US market, working shipping rates to the US, and no stale pre-production order.
+with an ACTIVE US market, working shipping rates to the US, no stale pre-production order, and full
+catalog enrichment (taxonomy category, SEO, `unitCost = 4.25 USD`, customs `US` / `392640`) on all three.
